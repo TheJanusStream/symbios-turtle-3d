@@ -1,0 +1,8 @@
+/target
+**/*.rs.bk
+Cargo.lock
+/.claude
+/.chainlink
+CHANGELOG.md
+symbios-turtle-3d-primer.sh
+symbios_turtle_3d_primer_*
