@@ -195,7 +195,17 @@ impl TurtleInterpreter {
                         );
                     }
                 }
-                TurtleOp::Spawn(_) => {}
+                TurtleOp::Spawn(default_id) => {
+                    let surface_id = view.params.get(0).map(|&x| x as u16).unwrap_or(*default_id);
+                    let scale_scalar = view.params.get(1).map(|&x| x as f32).unwrap_or(1.0);
+
+                    skeleton.add_prop(crate::skeleton::SkeletonProp {
+                        surface_id,
+                        position: turtle.position,
+                        rotation: turtle.rotation,
+                        scale: Vec3::splat(scale_scalar),
+                    });
+                }
                 TurtleOp::Ignore => {}
             }
         }
