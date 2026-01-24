@@ -1,6 +1,6 @@
 use crate::skeleton::{Skeleton, SkeletonPoint};
 use crate::turtle::{TurtleOp, TurtleState};
-use glam::{Mat3, Quat, Vec3};
+use glam::{Mat3, Quat, Vec3, Vec4};
 use std::collections::HashMap;
 use std::f32::consts::PI;
 use symbios::{SymbiosState, SymbolTable};
@@ -64,6 +64,12 @@ impl TurtleInterpreter {
             ("[", TurtleOp::Push),
             ("]", TurtleOp::Pop),
             ("~", TurtleOp::Spawn(0)),
+            // PBR Mappings
+            ("'", TurtleOp::SetColor),
+            (",", TurtleOp::SetMaterial),
+            ("#", TurtleOp::SetRoughness),
+            ("@", TurtleOp::SetMetallic),
+            (";", TurtleOp::SetTexture),
         ];
 
         for (sym, op) in mappings {
@@ -88,12 +94,21 @@ impl TurtleInterpreter {
             };
 
             let op = self.op_map.get(&view.sym).unwrap_or(&TurtleOp::Ignore);
+            // Helper to get param at index with default
+            let p = |idx: usize, def: f32| -> f32 {
+                view.params.get(idx).map(|&x| x as f32).unwrap_or(def)
+            };
+            let p0 = p(0, 0.0); // Common case helper
             let get_val =
                 |default: f32| -> f32 { view.params.first().map(|&x| x as f32).unwrap_or(default) };
 
             match op {
-                TurtleOp::Draw => {
+                TurtleOp::Draw | TurtleOp::Move => {
                     let len = get_val(self.config.default_step);
+                    let is_move = matches!(op, TurtleOp::Move);
+
+                    // Logic for Tropism and Movement (same as before)...
+                    // ... [Truncated for brevity, assuming standard move logic] ...
 
                     if skeleton.strands.is_empty() {
                         skeleton.add_node(
@@ -101,45 +116,46 @@ impl TurtleInterpreter {
                                 position: turtle.position,
                                 rotation: turtle.rotation,
                                 radius: turtle.width / 2.0,
+                                color: turtle.color,
+                                material_id: turtle.material_id,
+                                roughness: turtle.roughness,
+                                metallic: turtle.metallic,
                             },
                             true,
                         );
                     }
 
-                    turtle.position += turtle.up() * len;
+                    if !is_move {
+                        turtle.position += turtle.up() * len;
 
-                    if let Some(t_vec) = self.config.tropism
-                        && self.config.elasticity > 0.0
-                    {
-                        let head = turtle.up();
-                        let h_cross_t = head.cross(t_vec);
-                        let mag = h_cross_t.length();
-                        if mag > 0.0001 {
-                            let angle = self.config.elasticity * mag;
-                            let axis = h_cross_t.normalize();
-                            turtle.rotate_axis(axis, angle);
+                        if let Some(t_vec) = self.config.tropism
+                            && self.config.elasticity > 0.0
+                        {
+                            let head = turtle.up();
+                            let h_cross_t = head.cross(t_vec);
+                            let mag = h_cross_t.length();
+                            if mag > 0.0001 {
+                                let angle = self.config.elasticity * mag;
+                                let axis = h_cross_t.normalize();
+                                turtle.rotate_axis(axis, angle);
+                            }
                         }
+                    } else {
+                        turtle.position += turtle.up() * len;
                     }
 
+                    // Push Node with FULL STATE
                     skeleton.add_node(
                         SkeletonPoint {
                             position: turtle.position,
                             rotation: turtle.rotation,
                             radius: turtle.width / 2.0,
+                            color: turtle.color,
+                            material_id: turtle.material_id,
+                            roughness: turtle.roughness,
+                            metallic: turtle.metallic,
                         },
-                        false,
-                    );
-                }
-                TurtleOp::Move => {
-                    let len = get_val(self.config.default_step);
-                    turtle.position += turtle.up() * len;
-                    skeleton.add_node(
-                        SkeletonPoint {
-                            position: turtle.position,
-                            rotation: turtle.rotation,
-                            radius: turtle.width / 2.0,
-                        },
-                        true,
+                        is_move, // Force new strand if this was a Move
                     );
                 }
                 TurtleOp::Yaw(sign) => {
@@ -170,6 +186,28 @@ impl TurtleInterpreter {
                 TurtleOp::SetWidth => {
                     turtle.width = get_val(turtle.width);
                 }
+                TurtleOp::SetColor => {
+                    // Logic: Supports 1 arg (Grayscale), 3 args (RGB), 4 args (RGBA)
+                    let count = view.params.len();
+                    match count {
+                        1 => turtle.color = Vec4::new(p0, p0, p0, 1.0),
+                        3 => turtle.color = Vec4::new(p(0, 0.), p(1, 0.), p(2, 0.), 1.0),
+                        4 => turtle.color = Vec4::new(p(0, 0.), p(1, 0.), p(2, 0.), p(3, 1.)),
+                        _ => {} // No change if no params
+                    }
+                }
+                TurtleOp::SetMaterial => {
+                    turtle.material_id = p0 as u8;
+                }
+                TurtleOp::SetRoughness => {
+                    turtle.roughness = p0.clamp(0.0, 1.0);
+                }
+                TurtleOp::SetMetallic => {
+                    turtle.metallic = p0.clamp(0.0, 1.0);
+                }
+                TurtleOp::SetTexture => {
+                    turtle.texture_id = p0 as u16;
+                }
                 TurtleOp::Push => {
                     stack.push(turtle);
                     // Explicitly break the strand on Push to isolate the branch
@@ -178,6 +216,10 @@ impl TurtleInterpreter {
                             position: turtle.position,
                             rotation: turtle.rotation,
                             radius: turtle.width / 2.0,
+                            color: turtle.color,
+                            material_id: turtle.material_id,
+                            roughness: turtle.roughness,
+                            metallic: turtle.metallic,
                         },
                         true,
                     );
@@ -190,13 +232,21 @@ impl TurtleInterpreter {
                                 position: turtle.position,
                                 rotation: turtle.rotation,
                                 radius: turtle.width / 2.0,
+                                color: turtle.color,
+                                material_id: turtle.material_id,
+                                roughness: turtle.roughness,
+                                metallic: turtle.metallic,
                             },
                             true,
                         );
                     }
                 }
                 TurtleOp::Spawn(default_id) => {
-                    let surface_id = view.params.get(0).map(|&x| x as u16).unwrap_or(*default_id);
+                    let surface_id = view
+                        .params
+                        .first()
+                        .map(|&x| x as u16)
+                        .unwrap_or(*default_id);
                     let scale_scalar = view.params.get(1).map(|&x| x as f32).unwrap_or(1.0);
 
                     skeleton.add_prop(crate::skeleton::SkeletonProp {

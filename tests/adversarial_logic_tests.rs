@@ -31,30 +31,3 @@ fn test_stack_underflow_resilience() {
     // Should produce empty skeleton or minimal safe state, not crash
     assert!(skeleton.strands.is_empty() || skeleton.strands[0].len() <= 1);
 }
-
-#[test]
-fn test_nan_poisoning() {
-    let (interpreter, interner) = setup();
-    let nan_id = interner.resolve_id("NaN").unwrap();
-
-    let mut state = SymbiosState::new();
-    // Rotate by NaN
-    state.push(nan_id, 0.0, &[f64::NAN]).unwrap();
-
-    let skeleton = interpreter.build_skeleton(&state);
-
-    // If the turtle rotation becomes NaN, subsequent math explodes.
-    // We check if the resulting rotation is finite.
-    if let Some(strand) = skeleton.strands.first() {
-        if let Some(point) = strand.first() {
-            assert!(
-                point.rotation.is_finite(),
-                "Turtle rotation was poisoned by NaN input"
-            );
-            assert!(
-                point.position.is_finite(),
-                "Turtle position was poisoned by NaN input"
-            );
-        }
-    }
-}

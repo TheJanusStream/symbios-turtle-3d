@@ -1,4 +1,4 @@
-use glam::{Quat, Vec3};
+use glam::{Quat, Vec3, Vec4};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -6,6 +6,11 @@ pub struct SkeletonPoint {
     pub position: Vec3,
     pub rotation: Quat,
     pub radius: f32,
+    // --- PBR Extensions ---
+    pub color: Vec4,
+    pub material_id: u8,
+    pub roughness: f32,
+    pub metallic: f32,
 }
 
 /// A discrete object (leaf, flower) spawned by the turtle.

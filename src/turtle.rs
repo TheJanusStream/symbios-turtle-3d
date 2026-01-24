@@ -1,4 +1,4 @@
-use glam::{Quat, Vec3};
+use glam::{Quat, Vec3, Vec4};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -6,6 +6,12 @@ pub struct TurtleState {
     pub position: Vec3,
     pub rotation: Quat,
     pub width: f32,
+    // --- PBR Extensions ---
+    pub color: Vec4,     // RGBA
+    pub material_id: u8, // For multi-material meshes
+    pub roughness: f32,
+    pub metallic: f32,
+    pub texture_id: u16,
 }
 
 impl Default for TurtleState {
@@ -14,6 +20,11 @@ impl Default for TurtleState {
             position: Vec3::ZERO,
             rotation: Quat::IDENTITY,
             width: 0.1,
+            color: Vec4::ONE, // White, opaque
+            material_id: 0,
+            roughness: 0.5,
+            metallic: 0.0,
+            texture_id: 0,
         }
     }
 }
@@ -71,6 +82,14 @@ pub enum TurtleOp {
     SetWidth,   // !
     Push,       // [
     Pop,        // ]
-    Spawn(u16), // ~ (New: Predefined Surface ID)
+    Spawn(u16), // ~ (Predefined Surface ID)
+
+    // --- PBR Ops ---
+    SetColor,     // ' (Expects 1, 3, or 4 params)
+    SetMaterial,  // , (Expects 1 param: id)
+    SetRoughness, // # (Expects 1 param: value)
+    SetMetallic,  // @ (Expects 1 param: value)
+    SetTexture,   // ; (placeholder symbol, usually generic)
+
     Ignore,
 }

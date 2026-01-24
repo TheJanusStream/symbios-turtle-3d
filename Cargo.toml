@@ -7,7 +7,7 @@ description = "Spatial interpretation layer for Symbios L-Systems using glam."
 license = "MIT"
 
 [dependencies]
-symbios = { path = "../symbios", version = "0.1.2" }
+symbios = "1.0.1"
 glam = { version = "0.30", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "2.0"
