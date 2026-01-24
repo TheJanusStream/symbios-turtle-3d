@@ -1,3 +1,5 @@
+//! Interpreter that converts L-System symbols into 3D turtle movements.
+
 use crate::skeleton::{Skeleton, SkeletonPoint};
 use crate::turtle::{TurtleOp, TurtleState};
 use glam::{Mat3, Quat, Vec3, Vec4};
@@ -5,12 +7,18 @@ use std::collections::HashMap;
 use std::f32::consts::PI;
 use symbios::{SymbiosState, SymbolTable};
 
+/// Configuration for turtle interpretation.
 #[derive(Clone, Debug)]
 pub struct TurtleConfig {
+    /// Default step length for Draw/Move when no parameter is given.
     pub default_step: f32,
+    /// Default rotation angle (in radians) for Yaw/Pitch/Roll.
     pub default_angle: f32,
+    /// Initial stroke width.
     pub initial_width: f32,
+    /// Optional tropism vector (e.g., gravity direction for plant growth).
     pub tropism: Option<Vec3>,
+    /// Tropism elasticity - how strongly the turtle bends toward tropism vector.
     pub elasticity: f32,
 }
 
@@ -26,12 +34,16 @@ impl Default for TurtleConfig {
     }
 }
 
+/// Interprets L-System output as 3D turtle graphics, producing a [`Skeleton`].
+///
+/// Maps symbol IDs to [`TurtleOp`]s and executes them to build geometry.
 pub struct TurtleInterpreter {
     op_map: HashMap<u16, TurtleOp>,
     config: TurtleConfig,
 }
 
 impl TurtleInterpreter {
+    /// Creates a new interpreter with the given configuration.
     pub fn new(config: TurtleConfig) -> Self {
         Self {
             op_map: HashMap::new(),
@@ -39,15 +51,21 @@ impl TurtleInterpreter {
         }
     }
 
+    /// Builder method to set the operation map.
     pub fn with_map(mut self, map: HashMap<u16, TurtleOp>) -> Self {
         self.op_map = map;
         self
     }
 
+    /// Maps a symbol ID to a turtle operation.
     pub fn set_op(&mut self, sym_id: u16, op: TurtleOp) {
         self.op_map.insert(sym_id, op);
     }
 
+    /// Populates the operation map with standard L-System symbols from a symbol table.
+    ///
+    /// Maps: `F`, `f`, `+`, `-`, `&`, `^`, `\`, `/`, `|`, `$`, `!`, `[`, `]`, `~`,
+    /// and PBR symbols: `'`, `,`, `#`, `@`, `;`.
     pub fn populate_standard_symbols(&mut self, interner: &SymbolTable) {
         let mappings = [
             ("F", TurtleOp::Draw),
@@ -79,6 +97,10 @@ impl TurtleInterpreter {
         }
     }
 
+    /// Interprets a [`SymbiosState`] and builds a [`Skeleton`] from turtle movements.
+    ///
+    /// Iterates through all symbols in the state, executing the corresponding
+    /// turtle operations and accumulating geometry into the skeleton.
     pub fn build_skeleton(&self, state: &SymbiosState) -> Skeleton {
         let mut skeleton = Skeleton::new();
         let mut turtle = TurtleState {
@@ -120,6 +142,7 @@ impl TurtleInterpreter {
                                 material_id: turtle.material_id,
                                 roughness: turtle.roughness,
                                 metallic: turtle.metallic,
+                                texture_id: turtle.texture_id,
                             },
                             true,
                         );
@@ -128,16 +151,16 @@ impl TurtleInterpreter {
                     if !is_move {
                         turtle.position += turtle.up() * len;
 
-                        if let Some(t_vec) = self.config.tropism
-                            && self.config.elasticity > 0.0
-                        {
-                            let head = turtle.up();
-                            let h_cross_t = head.cross(t_vec);
-                            let mag = h_cross_t.length();
-                            if mag > 0.0001 {
-                                let angle = self.config.elasticity * mag;
-                                let axis = h_cross_t.normalize();
-                                turtle.rotate_axis(axis, angle);
+                        if let Some(t_vec) = self.config.tropism {
+                            if self.config.elasticity > 0.0 {
+                                let head = turtle.up();
+                                let h_cross_t = head.cross(t_vec);
+                                let mag = h_cross_t.length();
+                                if mag > 0.0001 {
+                                    let angle = self.config.elasticity * mag;
+                                    let axis = h_cross_t.normalize();
+                                    turtle.rotate_axis(axis, angle);
+                                }
                             }
                         }
                     } else {
@@ -154,6 +177,7 @@ impl TurtleInterpreter {
                             material_id: turtle.material_id,
                             roughness: turtle.roughness,
                             metallic: turtle.metallic,
+                            texture_id: turtle.texture_id,
                         },
                         is_move, // Force new strand if this was a Move
                     );
@@ -220,6 +244,7 @@ impl TurtleInterpreter {
                             material_id: turtle.material_id,
                             roughness: turtle.roughness,
                             metallic: turtle.metallic,
+                            texture_id: turtle.texture_id,
                         },
                         true,
                     );
@@ -236,6 +261,7 @@ impl TurtleInterpreter {
                                 material_id: turtle.material_id,
                                 roughness: turtle.roughness,
                                 metallic: turtle.metallic,
+                                texture_id: turtle.texture_id,
                             },
                             true,
                         );

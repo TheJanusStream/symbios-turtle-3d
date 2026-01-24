@@ -1,16 +1,28 @@
+//! Turtle state and operations for 3D L-System interpretation.
+
 use glam::{Quat, Vec3, Vec4};
 use serde::{Deserialize, Serialize};
 
+/// The current state of the turtle in 3D space.
+///
+/// Includes position, orientation, stroke width, and PBR material properties.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct TurtleState {
+    /// Current world-space position.
     pub position: Vec3,
+    /// Current orientation as a quaternion.
     pub rotation: Quat,
+    /// Stroke width for drawing operations.
     pub width: f32,
-    // --- PBR Extensions ---
-    pub color: Vec4,     // RGBA
-    pub material_id: u8, // For multi-material meshes
+    /// RGBA color (PBR albedo).
+    pub color: Vec4,
+    /// Material ID for multi-material mesh generation.
+    pub material_id: u8,
+    /// PBR roughness value (0.0 = smooth, 1.0 = rough).
     pub roughness: f32,
+    /// PBR metallic value (0.0 = dielectric, 1.0 = metal).
     pub metallic: f32,
+    /// Texture ID for texture mapping.
     pub texture_id: u16,
 }
 
@@ -30,39 +42,46 @@ impl Default for TurtleState {
 }
 
 impl TurtleState {
+    /// Returns the turtle's local up direction (Y-axis) in world space.
     pub fn up(&self) -> Vec3 {
         self.rotation * Vec3::Y
     }
 
+    /// Returns the turtle's local forward direction (Z-axis) in world space.
     pub fn forward(&self) -> Vec3 {
         self.rotation * Vec3::Z
     }
 
+    /// Returns the turtle's local right direction (X-axis) in world space.
     pub fn right(&self) -> Vec3 {
         self.rotation * Vec3::X
     }
 
+    /// Rotates around the local X-axis (pitch).
     pub fn rotate_local_x(&mut self, angle: f32) {
         let rot = Quat::from_axis_angle(Vec3::X, angle);
         self.rotation *= rot;
     }
 
+    /// Rotates around the local Y-axis (roll).
     pub fn rotate_local_y(&mut self, angle: f32) {
         let rot = Quat::from_axis_angle(Vec3::Y, angle);
         self.rotation *= rot;
     }
 
+    /// Rotates around the local Z-axis (yaw).
     pub fn rotate_local_z(&mut self, angle: f32) {
         let rot = Quat::from_axis_angle(Vec3::Z, angle);
         self.rotation *= rot;
     }
 
+    /// Rotates around an arbitrary world-space axis.
     pub fn rotate_axis(&mut self, axis: Vec3, angle: f32) {
         let rot = Quat::from_axis_angle(axis, angle);
         self.rotation = rot * self.rotation;
     }
 
-    // Aligns the turtle so its Up vector matches the target, minimizing twist
+    /// Aligns the turtle's up vector to the target direction, minimizing twist.
     pub fn align_up_to(&mut self, target_up: Vec3) {
         let current_up = self.up();
         let rotation = Quat::from_rotation_arc(current_up, target_up);
@@ -70,26 +89,43 @@ impl TurtleState {
     }
 }
 
+/// Operations that can be performed by the turtle during L-System interpretation.
+///
+/// Each variant corresponds to a standard L-System symbol or PBR extension.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TurtleOp {
+    /// Draw forward, adding a segment to the skeleton (`F`).
     Draw,
+    /// Move forward without drawing (`f`).
     Move,
-    Yaw(f32),   // + / -
-    Pitch(f32), // & / ^
-    Roll(f32),  // \ / /
-    TurnAround, // |
-    Vertical,   // $
-    SetWidth,   // !
-    Push,       // [
-    Pop,        // ]
-    Spawn(u16), // ~ (Predefined Surface ID)
-
-    // --- PBR Ops ---
-    SetColor,     // ' (Expects 1, 3, or 4 params)
-    SetMaterial,  // , (Expects 1 param: id)
-    SetRoughness, // # (Expects 1 param: value)
-    SetMetallic,  // @ (Expects 1 param: value)
-    SetTexture,   // ; (placeholder symbol, usually generic)
-
+    /// Rotate around Z-axis. Sign indicates direction (`+` / `-`).
+    Yaw(f32),
+    /// Rotate around X-axis. Sign indicates direction (`&` / `^`).
+    Pitch(f32),
+    /// Rotate around Y-axis. Sign indicates direction (`\` / `/`).
+    Roll(f32),
+    /// Turn around 180 degrees (`|`).
+    TurnAround,
+    /// Align to vertical/gravity direction (`$`).
+    Vertical,
+    /// Set stroke width (`!`).
+    SetWidth,
+    /// Push current state onto stack (`[`).
+    Push,
+    /// Pop state from stack (`]`).
+    Pop,
+    /// Spawn a prop/surface at current position (`~`). Contains default surface ID.
+    Spawn(u16),
+    /// Set color - accepts 1 (grayscale), 3 (RGB), or 4 (RGBA) params (`'`).
+    SetColor,
+    /// Set material ID (`,`).
+    SetMaterial,
+    /// Set PBR roughness (`#`).
+    SetRoughness,
+    /// Set PBR metallic (`@`).
+    SetMetallic,
+    /// Set texture ID (`;`).
+    SetTexture,
+    /// Ignored symbol (no operation).
     Ignore,
 }
