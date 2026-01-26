@@ -7,7 +7,7 @@ This crate provides a 3D turtle graphics interpreter that converts L-System symb
 ## Features
 
 - **Standard L-System operations**: Draw (`F`), Move (`f`), rotations (`+`, `-`, `&`, `^`, `\`, `/`), branching (`[`, `]`)
-- **PBR material properties**: Color, roughness, metallic, texture ID per segment
+- **Palette-based materials**: Color, material ID, and UV scale per segment — roughness, metallic, and other PBR properties are defined externally via a material palette
 - **Tropism support**: Configurable gravity/light attraction for natural plant growth
 - **Prop spawning**: Place discrete objects (leaves, flowers) with the `~` operator
 
@@ -72,6 +72,20 @@ let config = TurtleConfig {
 };
 ```
 
+## Material Philosophy: Substance vs. Variation
+
+This crate follows a **palette-first** approach to materials. Instead of specifying PBR properties
+(roughness, metallic, etc.) per-segment in the L-System grammar, these properties are defined
+externally in a **material palette** indexed by `material_id`.
+
+The L-System grammar controls:
+- **Color** (`'`) — per-segment albedo tint
+- **Material ID** (`,`) — selects a palette entry that defines the full PBR substance
+- **UV Scale** (`;`) — adjusts texture density without changing the substance
+
+This separation keeps grammars focused on *what varies* (color, which material, texture density)
+while the palette handles *what stays consistent* (roughness, metallic, normal maps).
+
 ## Symbol Reference
 
 | Symbol | Operation | Parameters |
@@ -88,9 +102,7 @@ let config = TurtleConfig {
 | `~` | Spawn prop | `(surface_id, scale)` |
 | `'` | Set color | `(gray)` or `(r,g,b)` or `(r,g,b,a)` |
 | `,` | Set material ID | `(id)` |
-| `#` | Set roughness | `(0.0-1.0)` |
-| `@` | Set metallic | `(0.0-1.0)` |
-| `;` | Set texture ID | `(id)` |
+| `;` | Set UV scale | `(scale)` |
 
 ## License
 

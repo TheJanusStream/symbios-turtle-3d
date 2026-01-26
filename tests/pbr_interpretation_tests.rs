@@ -6,46 +6,39 @@ fn setup() -> (TurtleInterpreter, SymbolTable) {
     let mut interner = SymbolTable::new();
     let mut interpreter = TurtleInterpreter::new(TurtleConfig::default());
 
-    // Intern standard symbols + PBR symbols
+    // Intern standard symbols + material symbols
     interner.intern("F").unwrap();
     interner.intern("'").unwrap(); // Color
     interner.intern(",").unwrap(); // Material
-    interner.intern("@").unwrap(); // Metallic
-    interner.intern("#").unwrap(); // Roughness
+    interner.intern(";").unwrap(); // UV Scale
 
     interpreter.populate_standard_symbols(&interner);
     (interpreter, interner)
 }
 
 #[test]
-fn test_pbr_state_changes() {
+fn test_material_state_changes() {
     let (interpreter, interner) = setup();
 
     let f_id = interner.resolve_id("F").unwrap();
     let color_id = interner.resolve_id("'").unwrap();
     let mat_id = interner.resolve_id(",").unwrap();
-    let metal_id = interner.resolve_id("@").unwrap();
-    let rough_id = interner.resolve_id("#").unwrap();
+    let uv_id = interner.resolve_id(";").unwrap();
 
     let mut state = SymbiosState::new();
 
     // Sequence:
     // 1. Set Color Red (1,0,0)
     // 2. Set Material 1
-    // 3. Set Metallic 0.8
-    // 4. Set Roughness 0.2
-    // 5. Draw F(1)
+    // 3. Set UV Scale 2.5
+    // 4. Draw F(1)
 
     state.push(color_id, 0.0, &[1.0, 0.0, 0.0]).unwrap();
     state.push(mat_id, 0.0, &[1.0]).unwrap();
-    state.push(metal_id, 0.0, &[0.8]).unwrap();
-    state.push(rough_id, 0.0, &[0.2]).unwrap();
+    state.push(uv_id, 0.0, &[2.5]).unwrap();
     state.push(f_id, 0.0, &[1.0]).unwrap();
 
     let skeleton = interpreter.build_skeleton(&state);
-
-    // Check results on the generated node
-    // Note: F generates Start and End nodes. Both should inherit state.
 
     let strand = &skeleton.strands[0];
     assert_eq!(strand.len(), 2);
@@ -58,10 +51,24 @@ fn test_pbr_state_changes() {
     assert_relative_eq!(point.color.z, 0.0);
     assert_relative_eq!(point.color.w, 1.0); // Default Alpha
 
-    // Material
+    // Material palette ID
     assert_eq!(point.material_id, 1);
 
-    // PBR
-    assert_relative_eq!(point.metallic, 0.8);
-    assert_relative_eq!(point.roughness, 0.2);
+    // UV Scale
+    assert_relative_eq!(point.uv_scale, 2.5);
+}
+
+#[test]
+fn test_uv_scale_default() {
+    let (interpreter, interner) = setup();
+
+    let f_id = interner.resolve_id("F").unwrap();
+
+    let mut state = SymbiosState::new();
+    state.push(f_id, 0.0, &[1.0]).unwrap();
+
+    let skeleton = interpreter.build_skeleton(&state);
+
+    let point = skeleton.strands[0][0];
+    assert_relative_eq!(point.uv_scale, 1.0);
 }

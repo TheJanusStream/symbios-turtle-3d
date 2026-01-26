@@ -12,17 +12,16 @@ pub struct SkeletonPoint {
     pub rotation: Quat,
     /// Radius at this point (half of width).
     pub radius: f32,
-    // --- PBR Extensions ---
+    // --- Material Extensions ---
     /// RGBA color.
     pub color: Vec4,
-    /// Material ID for multi-material meshes.
+    /// Material palette ID for multi-material meshes.
+    ///
+    /// References an external palette entry that defines roughness, metallic,
+    /// and other PBR properties.
     pub material_id: u8,
-    /// PBR roughness (0.0 = smooth, 1.0 = rough).
-    pub roughness: f32,
-    /// PBR metallic (0.0 = dielectric, 1.0 = metal).
-    pub metallic: f32,
-    /// Texture ID for texture mapping.
-    pub texture_id: u16,
+    /// UV texture coordinate scale factor.
+    pub uv_scale: f32,
 }
 
 /// A discrete object (leaf, flower, etc.) spawned by the turtle at a specific location.
@@ -63,10 +62,10 @@ impl Skeleton {
         if force_new_strand || self.strands.is_empty() {
             self.strands.push(vec![point]);
         } else if let Some(last_strand) = self.strands.last_mut() {
-            if let Some(last_point) = last_strand.last() {
-                if last_point.position.distance_squared(point.position) < 0.00001 {
-                    return;
-                }
+            if let Some(last_point) = last_strand.last()
+                && last_point.position.distance_squared(point.position) < 0.00001
+            {
+                return;
             }
             last_strand.push(point);
         }

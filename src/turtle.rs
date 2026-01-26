@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 
 /// The current state of the turtle in 3D space.
 ///
-/// Includes position, orientation, stroke width, and PBR material properties.
+/// Includes position, orientation, stroke width, and palette-based material properties.
+/// Roughness, metallic, and texture are controlled by the material palette via `material_id`.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct TurtleState {
     /// Current world-space position.
@@ -17,13 +18,12 @@ pub struct TurtleState {
     /// RGBA color (PBR albedo).
     pub color: Vec4,
     /// Material ID for multi-material mesh generation.
+    ///
+    /// References a material palette entry that defines roughness, metallic,
+    /// and other PBR properties externally.
     pub material_id: u8,
-    /// PBR roughness value (0.0 = smooth, 1.0 = rough).
-    pub roughness: f32,
-    /// PBR metallic value (0.0 = dielectric, 1.0 = metal).
-    pub metallic: f32,
-    /// Texture ID for texture mapping.
-    pub texture_id: u16,
+    /// UV texture coordinate scale factor.
+    pub uv_scale: f32,
 }
 
 impl Default for TurtleState {
@@ -34,9 +34,7 @@ impl Default for TurtleState {
             width: 0.1,
             color: Vec4::ONE, // White, opaque
             material_id: 0,
-            roughness: 0.5,
-            metallic: 0.0,
-            texture_id: 0,
+            uv_scale: 1.0,
         }
     }
 }
@@ -120,12 +118,8 @@ pub enum TurtleOp {
     SetColor,
     /// Set material ID (`,`).
     SetMaterial,
-    /// Set PBR roughness (`#`).
-    SetRoughness,
-    /// Set PBR metallic (`@`).
-    SetMetallic,
-    /// Set texture ID (`;`).
-    SetTexture,
+    /// Set UV texture coordinate scale (`;`).
+    SetUVScale,
     /// Ignored symbol (no operation).
     Ignore,
 }

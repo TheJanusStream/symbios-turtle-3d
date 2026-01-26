@@ -9,7 +9,7 @@
 //! ## Features
 //!
 //! - Standard L-System turtle operations (draw, move, rotate, branch)
-//! - PBR material properties per segment (color, roughness, metallic, texture)
+//! - Palette-based material system with per-segment color, material ID, and UV scale
 //! - Tropism support for natural plant-like growth
 //! - Prop spawning for discrete objects (leaves, flowers)
 //!

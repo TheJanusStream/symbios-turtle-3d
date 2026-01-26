@@ -65,7 +65,7 @@ impl TurtleInterpreter {
     /// Populates the operation map with standard L-System symbols from a symbol table.
     ///
     /// Maps: `F`, `f`, `+`, `-`, `&`, `^`, `\`, `/`, `|`, `$`, `!`, `[`, `]`, `~`,
-    /// and PBR symbols: `'`, `,`, `#`, `@`, `;`.
+    /// and material symbols: `'`, `,`, `;`.
     pub fn populate_standard_symbols(&mut self, interner: &SymbolTable) {
         let mappings = [
             ("F", TurtleOp::Draw),
@@ -82,12 +82,10 @@ impl TurtleInterpreter {
             ("[", TurtleOp::Push),
             ("]", TurtleOp::Pop),
             ("~", TurtleOp::Spawn(0)),
-            // PBR Mappings
+            // Material Mappings
             ("'", TurtleOp::SetColor),
             (",", TurtleOp::SetMaterial),
-            ("#", TurtleOp::SetRoughness),
-            ("@", TurtleOp::SetMetallic),
-            (";", TurtleOp::SetTexture),
+            (";", TurtleOp::SetUVScale),
         ];
 
         for (sym, op) in mappings {
@@ -140,9 +138,7 @@ impl TurtleInterpreter {
                                 radius: turtle.width / 2.0,
                                 color: turtle.color,
                                 material_id: turtle.material_id,
-                                roughness: turtle.roughness,
-                                metallic: turtle.metallic,
-                                texture_id: turtle.texture_id,
+                                uv_scale: turtle.uv_scale,
                             },
                             true,
                         );
@@ -151,16 +147,16 @@ impl TurtleInterpreter {
                     if !is_move {
                         turtle.position += turtle.up() * len;
 
-                        if let Some(t_vec) = self.config.tropism {
-                            if self.config.elasticity > 0.0 {
-                                let head = turtle.up();
-                                let h_cross_t = head.cross(t_vec);
-                                let mag = h_cross_t.length();
-                                if mag > 0.0001 {
-                                    let angle = self.config.elasticity * mag;
-                                    let axis = h_cross_t.normalize();
-                                    turtle.rotate_axis(axis, angle);
-                                }
+                        if let Some(t_vec) = self.config.tropism
+                            && self.config.elasticity > 0.0
+                        {
+                            let head = turtle.up();
+                            let h_cross_t = head.cross(t_vec);
+                            let mag = h_cross_t.length();
+                            if mag > 0.0001 {
+                                let angle = self.config.elasticity * mag;
+                                let axis = h_cross_t.normalize();
+                                turtle.rotate_axis(axis, angle);
                             }
                         }
                     } else {
@@ -175,9 +171,7 @@ impl TurtleInterpreter {
                             radius: turtle.width / 2.0,
                             color: turtle.color,
                             material_id: turtle.material_id,
-                            roughness: turtle.roughness,
-                            metallic: turtle.metallic,
-                            texture_id: turtle.texture_id,
+                            uv_scale: turtle.uv_scale,
                         },
                         is_move, // Force new strand if this was a Move
                     );
@@ -223,14 +217,8 @@ impl TurtleInterpreter {
                 TurtleOp::SetMaterial => {
                     turtle.material_id = p0 as u8;
                 }
-                TurtleOp::SetRoughness => {
-                    turtle.roughness = p0.clamp(0.0, 1.0);
-                }
-                TurtleOp::SetMetallic => {
-                    turtle.metallic = p0.clamp(0.0, 1.0);
-                }
-                TurtleOp::SetTexture => {
-                    turtle.texture_id = p0 as u16;
+                TurtleOp::SetUVScale => {
+                    turtle.uv_scale = get_val(1.0).max(0.0);
                 }
                 TurtleOp::Push => {
                     stack.push(turtle);
@@ -242,9 +230,7 @@ impl TurtleInterpreter {
                             radius: turtle.width / 2.0,
                             color: turtle.color,
                             material_id: turtle.material_id,
-                            roughness: turtle.roughness,
-                            metallic: turtle.metallic,
-                            texture_id: turtle.texture_id,
+                            uv_scale: turtle.uv_scale,
                         },
                         true,
                     );
@@ -259,9 +245,7 @@ impl TurtleInterpreter {
                                 radius: turtle.width / 2.0,
                                 color: turtle.color,
                                 material_id: turtle.material_id,
-                                roughness: turtle.roughness,
-                                metallic: turtle.metallic,
-                                texture_id: turtle.texture_id,
+                                uv_scale: turtle.uv_scale,
                             },
                             true,
                         );
