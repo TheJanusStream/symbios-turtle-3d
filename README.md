@@ -104,6 +104,15 @@ while the palette handles *what stays consistent* (roughness, metallic, normal m
 | `,` | Set material ID | `(id)` |
 | `;` | Set UV scale | `(scale)` |
 
+## Ecosystem
+
+```
+symbios (derivation engine)
+  └── symbios-turtle-3d (3D interpreter)  ← you are here
+        └── bevy_symbios (Bevy meshes, materials, export, UI)
+              └── lsystem-explorer (interactive application)
+```
+
 ## License
 
 MIT
