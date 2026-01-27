@@ -264,6 +264,8 @@ impl TurtleInterpreter {
                         position: turtle.position,
                         rotation: turtle.rotation,
                         scale: Vec3::splat(scale_scalar),
+                        color: turtle.color,
+                        material_id: turtle.material_id,
                     });
                 }
                 TurtleOp::Ignore => {}

@@ -25,6 +25,9 @@ pub struct SkeletonPoint {
 }
 
 /// A discrete object (leaf, flower, etc.) spawned by the turtle at a specific location.
+///
+/// Inherits material state (color, material ID) from the turtle at spawn time,
+/// allowing downstream renderers to style props with the same palette system as strands.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct SkeletonProp {
     /// The ID of the surface asset to spawn.
@@ -35,6 +38,10 @@ pub struct SkeletonProp {
     pub rotation: Quat,
     /// Scale factor (can be non-uniform).
     pub scale: Vec3,
+    /// RGBA color inherited from turtle state at spawn time.
+    pub color: Vec4,
+    /// Material palette ID inherited from turtle state at spawn time.
+    pub material_id: u8,
 }
 
 /// The geometric output of turtle interpretation: a collection of strands and props.
