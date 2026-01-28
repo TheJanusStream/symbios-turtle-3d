@@ -99,7 +99,7 @@ while the palette handles *what stays consistent* (roughness, metallic, normal m
 | `$` | Align to vertical | - |
 | `!` | Set width | `(width)` |
 | `[` / `]` | Push/Pop state | - |
-| `~` | Spawn prop | `(surface_id, scale)` |
+| `~` | Spawn prop | `(prop_id, scale)` |
 | `'` | Set color | `(gray)` or `(r,g,b)` or `(r,g,b,a)` |
 | `,` | Set material ID | `(id)` |
 | `;` | Set UV scale | `(scale)` |

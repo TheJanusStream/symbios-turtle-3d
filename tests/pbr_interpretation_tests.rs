@@ -72,14 +72,14 @@ fn test_prop_inherits_turtle_material_state() {
     // Set color to green, material to 3, then spawn a prop
     state.push(color_id, 0.0, &[0.0, 1.0, 0.0]).unwrap();
     state.push(mat_id, 0.0, &[3.0]).unwrap();
-    state.push(spawn_id, 0.0, &[7.0]).unwrap(); // surface_id=7
+    state.push(spawn_id, 0.0, &[7.0]).unwrap(); // prop_id=7
 
     let skeleton = interpreter.build_skeleton(&state);
 
     assert_eq!(skeleton.props.len(), 1);
     let prop = &skeleton.props[0];
 
-    assert_eq!(prop.surface_id, 7);
+    assert_eq!(prop.prop_id, 7);
 
     // Color should be green (RGB) with default alpha
     assert_relative_eq!(prop.color.x, 0.0);

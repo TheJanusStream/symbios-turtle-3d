@@ -252,7 +252,7 @@ impl TurtleInterpreter {
                     }
                 }
                 TurtleOp::Spawn(default_id) => {
-                    let surface_id = view
+                    let prop_id = view
                         .params
                         .first()
                         .map(|&x| x as u16)
@@ -260,7 +260,7 @@ impl TurtleInterpreter {
                     let scale_scalar = view.params.get(1).map(|&x| x as f32).unwrap_or(1.0);
 
                     skeleton.add_prop(crate::skeleton::SkeletonProp {
-                        surface_id,
+                        prop_id,
                         position: turtle.position,
                         rotation: turtle.rotation,
                         scale: Vec3::splat(scale_scalar),

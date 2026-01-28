@@ -30,8 +30,8 @@ pub struct SkeletonPoint {
 /// allowing downstream renderers to style props with the same palette system as strands.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct SkeletonProp {
-    /// The ID of the surface asset to spawn.
-    pub surface_id: u16,
+    /// The ID of the prop asset to spawn.
+    pub prop_id: u16,
     /// World-space position.
     pub position: Vec3,
     /// World-space rotation.

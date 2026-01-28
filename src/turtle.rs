@@ -112,7 +112,7 @@ pub enum TurtleOp {
     Push,
     /// Pop state from stack (`]`).
     Pop,
-    /// Spawn a prop/surface at current position (`~`). Contains default surface ID.
+    /// Spawn a prop at current position (`~`). Contains default prop ID.
     Spawn(u16),
     /// Set color - accepts 1 (grayscale), 3 (RGB), or 4 (RGBA) params (`'`).
     SetColor,
