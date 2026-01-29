@@ -74,7 +74,7 @@ impl TurtleInterpreter {
             ("-", TurtleOp::Yaw(-1.0)),
             ("&", TurtleOp::Pitch(1.0)),
             ("^", TurtleOp::Pitch(-1.0)),
-            ("\\\\", TurtleOp::Roll(1.0)),
+            ("\\", TurtleOp::Roll(1.0)),
             ("/", TurtleOp::Roll(-1.0)),
             ("|", TurtleOp::TurnAround),
             ("$", TurtleOp::Vertical),
@@ -126,9 +126,6 @@ impl TurtleInterpreter {
                 TurtleOp::Draw | TurtleOp::Move => {
                     let len = get_val(self.config.default_step);
                     let is_move = matches!(op, TurtleOp::Move);
-
-                    // Logic for Tropism and Movement (same as before)...
-                    // ... [Truncated for brevity, assuming standard move logic] ...
 
                     if skeleton.strands.is_empty() {
                         skeleton.add_node(
