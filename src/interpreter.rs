@@ -125,7 +125,10 @@ impl TurtleInterpreter {
                 None => break,
             };
 
-            let op = self.op_map.get(view.sym as usize).unwrap_or(&TurtleOp::Ignore);
+            let op = self
+                .op_map
+                .get(view.sym as usize)
+                .unwrap_or(&TurtleOp::Ignore);
             // Helper to get param at index with default
             let p = |idx: usize, def: f32| -> f32 {
                 view.params.get(idx).map(|&x| x as f32).unwrap_or(def)

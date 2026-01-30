@@ -130,7 +130,6 @@ fn test_roll_rotations_compound() {
     assert_relative_eq!(pos_rolled.y, 0.0, epsilon = 0.001);
     assert_relative_eq!(pos_rolled.z, 0.0, epsilon = 0.001);
 
-
     let pos_rolled = run_sequence("\\(90) &(90) F(10)", &interpreter, &mut interner);
 
     // Check Result
