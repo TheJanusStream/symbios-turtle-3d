@@ -3,7 +3,6 @@
 use crate::skeleton::{Skeleton, SkeletonPoint};
 use crate::turtle::{TurtleOp, TurtleState};
 use glam::{Mat3, Quat, Vec3, Vec4};
-use std::collections::HashMap;
 use std::f32::consts::PI;
 use symbios::{SymbiosState, SymbolTable};
 
@@ -20,6 +19,11 @@ pub struct TurtleConfig {
     pub tropism: Option<Vec3>,
     /// Tropism elasticity - how strongly the turtle bends toward tropism vector.
     pub elasticity: f32,
+    /// Maximum stack depth for push/pop operations.
+    ///
+    /// Prevents denial-of-service via infinite recursion (e.g., `A -> [ A ]`).
+    /// Push operations are ignored when this limit is reached.
+    pub max_stack_depth: usize,
 }
 
 impl Default for TurtleConfig {
@@ -30,6 +34,7 @@ impl Default for TurtleConfig {
             initial_width: 0.1,
             tropism: None,
             elasticity: 0.0,
+            max_stack_depth: 1024,
         }
     }
 }
@@ -37,8 +42,9 @@ impl Default for TurtleConfig {
 /// Interprets L-System output as 3D turtle graphics, producing a [`Skeleton`].
 ///
 /// Maps symbol IDs to [`TurtleOp`]s and executes them to build geometry.
+/// Uses a Vec for O(1) direct lookup by symbol ID instead of hashing.
 pub struct TurtleInterpreter {
-    op_map: HashMap<u16, TurtleOp>,
+    op_map: Vec<TurtleOp>,
     config: TurtleConfig,
 }
 
@@ -46,20 +52,26 @@ impl TurtleInterpreter {
     /// Creates a new interpreter with the given configuration.
     pub fn new(config: TurtleConfig) -> Self {
         Self {
-            op_map: HashMap::new(),
+            op_map: Vec::new(),
             config,
         }
     }
 
-    /// Builder method to set the operation map.
-    pub fn with_map(mut self, map: HashMap<u16, TurtleOp>) -> Self {
+    /// Builder method to set the operation map from a Vec.
+    pub fn with_map(mut self, map: Vec<TurtleOp>) -> Self {
         self.op_map = map;
         self
     }
 
     /// Maps a symbol ID to a turtle operation.
+    ///
+    /// Grows the internal Vec as needed, filling gaps with `TurtleOp::Ignore`.
     pub fn set_op(&mut self, sym_id: u16, op: TurtleOp) {
-        self.op_map.insert(sym_id, op);
+        let idx = sym_id as usize;
+        if idx >= self.op_map.len() {
+            self.op_map.resize(idx + 1, TurtleOp::Ignore);
+        }
+        self.op_map[idx] = op;
     }
 
     /// Populates the operation map with standard L-System symbols from a symbol table.
@@ -90,7 +102,7 @@ impl TurtleInterpreter {
 
         for (sym, op) in mappings {
             if let Some(id) = interner.resolve_id(sym) {
-                self.op_map.insert(id, op);
+                self.set_op(id, op);
             }
         }
     }
@@ -113,7 +125,7 @@ impl TurtleInterpreter {
                 None => break,
             };
 
-            let op = self.op_map.get(&view.sym).unwrap_or(&TurtleOp::Ignore);
+            let op = self.op_map.get(view.sym as usize).unwrap_or(&TurtleOp::Ignore);
             // Helper to get param at index with default
             let p = |idx: usize, def: f32| -> f32 {
                 view.params.get(idx).map(|&x| x as f32).unwrap_or(def)
@@ -218,6 +230,9 @@ impl TurtleInterpreter {
                     turtle.uv_scale = get_val(1.0).max(0.0);
                 }
                 TurtleOp::Push => {
+                    if stack.len() >= self.config.max_stack_depth {
+                        continue;
+                    }
                     stack.push(turtle);
                     // Explicitly break the strand on Push to isolate the branch
                     skeleton.add_node(

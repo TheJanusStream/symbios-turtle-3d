@@ -80,9 +80,20 @@ impl TurtleState {
     }
 
     /// Aligns the turtle's up vector to the target direction, minimizing twist.
+    ///
+    /// Uses a robust fallback when vectors are nearly 180° opposed to prevent
+    /// NaN values or erratic flipping from `Quat::from_rotation_arc`.
     pub fn align_up_to(&mut self, target_up: Vec3) {
         let current_up = self.up();
-        let rotation = Quat::from_rotation_arc(current_up, target_up);
+        let dot = current_up.dot(target_up);
+
+        let rotation = if dot < -0.999 {
+            // Vectors are nearly opposite; rotate 180° around the forward axis
+            Quat::from_axis_angle(self.forward(), std::f32::consts::PI)
+        } else {
+            Quat::from_rotation_arc(current_up, target_up)
+        };
+
         self.rotation = rotation * self.rotation;
     }
 }
