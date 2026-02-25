@@ -17,9 +17,9 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-symbios-turtle-3d = "0.3"
+symbios-turtle-3d = "0.4"
 symbios = "1.4"
-glam = "0.30"
+glam = "0.30.10"
 ```
 
 ## Usage
