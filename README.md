@@ -79,6 +79,7 @@ This crate follows a **palette-first** approach to materials. Instead of specify
 externally in a **material palette** indexed by `material_id`.
 
 The L-System grammar controls:
+
 - **Color** (`'`) — per-segment albedo tint
 - **Material ID** (`,`) — selects a palette entry that defines the full PBR substance
 - **UV Scale** (`;`) — adjusts texture density without changing the substance
@@ -88,25 +89,25 @@ while the palette handles *what stays consistent* (roughness, metallic, normal m
 
 ## Symbol Reference
 
-| Symbol | Operation | Parameters |
-|--------|-----------|------------|
-| `F` | Draw forward | `(length)` |
-| `f` | Move forward (no draw) | `(length)` |
-| `+` / `-` | Yaw (rotate Z) | `(angle°)` |
-| `&` / `^` | Pitch (rotate X) | `(angle°)` |
-| `\` / `/` | Roll (rotate Y) | `(angle°)` |
-| `\|` | Turn around (180°) | - |
-| `$` | Align to vertical | - |
-| `!` | Set width | `(width)` |
-| `[` / `]` | Push/Pop state | - |
-| `~` | Spawn prop | `(prop_id, scale)` |
-| `'` | Set color | `(gray)` or `(r,g,b)` or `(r,g,b,a)` |
-| `,` | Set material ID | `(id)` |
-| `;` | Set UV scale | `(scale)` |
+| Symbol    | Operation              | Parameters                                                  |
+|-----------|------------------------|-------------------------------------------------------------|
+| `F`       | Draw forward           | `(length)`                                                  |
+| `f`       | Move forward (no draw) | `(length)`                                                  |
+| `+` / `-` | Yaw (rotate Z)         | `(angle°)`                                                  |
+| `&` / `^` | Pitch (rotate X)       | `(angle°)`                                                  |
+| `\` / `/` | Roll (rotate Y)        | `(angle°)`                                                  |
+| `\|`      | Turn around (180°)     | -                                                           |
+| `$`       | Align to vertical      | -                                                           |
+| `!`       | Set width              | `(width)`                                                   |
+| `[` / `]` | Push/Pop state         | -                                                           |
+| `~`       | Spawn prop             | `(prop_id)`, `(prop_id, scale)`, or `(prop_id, sx, sy, sz)` |
+| `'`       | Set color              | `(gray)` or `(r,g,b)` or `(r,g,b,a)`                        |
+| `,`       | Set material ID        | `(id)`                                                      |
+| `;`       | Set UV scale           | `(scale)`                                                   |
 
 ## Ecosystem
 
-```
+```text
 symbios (derivation engine)
   └── symbios-turtle-3d (3D interpreter)  ← you are here
         └── bevy_symbios (Bevy meshes, materials, export, UI)

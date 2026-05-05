@@ -1,6 +1,6 @@
 use approx::assert_relative_eq;
 use symbios::{SymbiosState, SymbolTable};
-use symbios_turtle_3d::{TurtleConfig, TurtleInterpreter};
+use symbios_turtle_3d::{STANDARD_TURTLE_SYMBOLS, TurtleConfig, TurtleInterpreter};
 
 fn setup_interpreter() -> (TurtleInterpreter, SymbolTable) {
     let mut interner = SymbolTable::new();
@@ -111,4 +111,123 @@ fn test_branching_topology() {
 
     let trunk_end = skeleton.strands[2].last().unwrap().position;
     assert_relative_eq!(trunk_end.y, 20.0);
+
+    // Parent linkage: branch (1) and trunk-resume (2) both fork from the
+    // root strand (0).
+    assert_eq!(skeleton.strand_parents.len(), skeleton.strands.len());
+    assert_eq!(skeleton.strand_parents[0], None, "root has no parent");
+    assert_eq!(
+        skeleton.strand_parents[1],
+        Some(0),
+        "branch should point at root"
+    );
+    assert_eq!(
+        skeleton.strand_parents[2],
+        Some(0),
+        "post-Pop trunk resume should also point at root"
+    );
+}
+
+#[test]
+fn test_strand_parents_nested_branches() {
+    // F [ F [ F ] F ] F  — two levels of nesting.
+    // Expected strand layout:
+    //   0: root (parent None)            — first F
+    //   1: outer branch (parent 0)       — opens at first [
+    //   2: inner branch (parent 1)       — opens at second [
+    //   3: outer-branch resume (parent 1)— closes inner ]
+    //   4: trunk resume (parent 0)       — closes outer ]
+    let (interpreter, interner) = setup_interpreter();
+    let f_id = interner.resolve_id("F").unwrap();
+    let push_id = interner.resolve_id("[").unwrap();
+    let pop_id = interner.resolve_id("]").unwrap();
+
+    let mut state = SymbiosState::new();
+    for (id, params) in [
+        (f_id, &[1.0_f64][..]),
+        (push_id, &[][..]),
+        (f_id, &[1.0][..]),
+        (push_id, &[][..]),
+        (f_id, &[1.0][..]),
+        (pop_id, &[][..]),
+        (f_id, &[1.0][..]),
+        (pop_id, &[][..]),
+        (f_id, &[1.0][..]),
+    ] {
+        state.push(id, 0.0, params).unwrap();
+    }
+
+    let skeleton = interpreter.build_skeleton(&state);
+    assert_eq!(skeleton.strand_parents.len(), skeleton.strands.len());
+    assert_eq!(skeleton.strand_parents[0], None);
+    assert_eq!(skeleton.strand_parents[1], Some(0));
+    assert_eq!(skeleton.strand_parents[2], Some(1));
+    assert_eq!(skeleton.strand_parents[3], Some(1));
+    assert_eq!(skeleton.strand_parents[4], Some(0));
+}
+
+#[test]
+fn test_with_standard_symbols_matches_manual_setup() {
+    // Manual: intern + populate, the boilerplate consumers currently write.
+    let mut interner_a = SymbolTable::new();
+    for sym in STANDARD_TURTLE_SYMBOLS {
+        interner_a.intern(sym).unwrap();
+    }
+    let mut interpreter_a = TurtleInterpreter::new(TurtleConfig::default());
+    interpreter_a.populate_standard_symbols(&interner_a);
+
+    // Convenience: builder helper does both.
+    let mut interner_b = SymbolTable::new();
+    let interpreter_b =
+        TurtleInterpreter::new(TurtleConfig::default()).with_standard_symbols(&mut interner_b);
+
+    // Both interners should resolve every standard symbol to the same ID
+    // (insertion order is preserved by the symbol table).
+    for sym in STANDARD_TURTLE_SYMBOLS {
+        assert_eq!(
+            interner_a.resolve_id(sym),
+            interner_b.resolve_id(sym),
+            "ID drift for symbol {sym:?}"
+        );
+    }
+
+    // Both interpreters should produce identical skeletons for the same input.
+    let f_id = interner_a.resolve_id("F").unwrap();
+    let plus_id = interner_a.resolve_id("+").unwrap();
+    let mut state = SymbiosState::new();
+    state.push(f_id, 0.0, &[3.0]).unwrap();
+    state.push(plus_id, 0.0, &[30.0]).unwrap();
+    state.push(f_id, 0.0, &[2.0]).unwrap();
+
+    let sk_a = interpreter_a.build_skeleton(&state);
+    let sk_b = interpreter_b.build_skeleton(&state);
+
+    assert_eq!(sk_a.strands.len(), sk_b.strands.len());
+    for (sa, sb) in sk_a.strands.iter().zip(sk_b.strands.iter()) {
+        assert_eq!(sa.len(), sb.len());
+        for (pa, pb) in sa.iter().zip(sb.iter()) {
+            assert_relative_eq!(pa.position.x, pb.position.x);
+            assert_relative_eq!(pa.position.y, pb.position.y);
+            assert_relative_eq!(pa.position.z, pb.position.z);
+        }
+    }
+}
+
+#[test]
+fn test_with_standard_symbols_idempotent_on_pre_populated_table() {
+    // Pre-intern a couple of symbols ourselves; with_standard_symbols should
+    // see them and leave their IDs alone, only adding the missing ones.
+    let mut interner = SymbolTable::new();
+    let pre_f = interner.intern("F").unwrap();
+    let pre_plus = interner.intern("+").unwrap();
+
+    let _interpreter =
+        TurtleInterpreter::new(TurtleConfig::default()).with_standard_symbols(&mut interner);
+
+    assert_eq!(interner.resolve_id("F"), Some(pre_f));
+    assert_eq!(interner.resolve_id("+"), Some(pre_plus));
+    // And the helper still added the rest.
+    for sym in STANDARD_TURTLE_SYMBOLS {
+        assert!(interner.resolve_id(sym).is_some(), "missing symbol {sym:?}");
+    }
 }

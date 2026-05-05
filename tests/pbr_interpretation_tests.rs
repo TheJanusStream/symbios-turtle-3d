@@ -114,6 +114,63 @@ fn test_prop_default_material_state() {
 }
 
 #[test]
+fn test_spawn_per_axis_scale() {
+    // Spawn the same prop_id three times with different (sx, sy, sz) and
+    // check each prop kept its own scale through the build.
+    let (interpreter, interner) = setup();
+    let spawn_id = interner.resolve_id("~").unwrap();
+
+    let mut state = SymbiosState::new();
+    state.push(spawn_id, 0.0, &[5.0, 1.0, 2.0, 3.0]).unwrap();
+    state.push(spawn_id, 0.0, &[5.0, 0.5, 0.5, 4.0]).unwrap();
+    state.push(spawn_id, 0.0, &[5.0, 7.0, 1.5, 0.25]).unwrap();
+
+    let skeleton = interpreter.build_skeleton(&state);
+    assert_eq!(skeleton.props.len(), 3);
+    assert!(
+        skeleton.props.iter().all(|p| p.prop_id == 5),
+        "all three should share prop_id 5"
+    );
+
+    let scales: Vec<_> = skeleton.props.iter().map(|p| p.scale).collect();
+    assert_relative_eq!(scales[0].x, 1.0);
+    assert_relative_eq!(scales[0].y, 2.0);
+    assert_relative_eq!(scales[0].z, 3.0);
+    assert_relative_eq!(scales[1].x, 0.5);
+    assert_relative_eq!(scales[1].y, 0.5);
+    assert_relative_eq!(scales[1].z, 4.0);
+    assert_relative_eq!(scales[2].x, 7.0);
+    assert_relative_eq!(scales[2].y, 1.5);
+    assert_relative_eq!(scales[2].z, 0.25);
+}
+
+#[test]
+fn test_spawn_uniform_scale_backward_compat() {
+    // Two-arg form ~(prop_id, s) must still produce a uniform-splat scale —
+    // existing L-Systems rely on this.
+    let (interpreter, interner) = setup();
+    let spawn_id = interner.resolve_id("~").unwrap();
+
+    let mut state = SymbiosState::new();
+    state.push(spawn_id, 0.0, &[2.0, 3.5]).unwrap();
+    state.push(spawn_id, 0.0, &[2.0]).unwrap(); // 1-arg → scale = 1
+    state.push(spawn_id, 0.0, &[]).unwrap(); // 0-arg → default prop, scale = 1
+
+    let skeleton = interpreter.build_skeleton(&state);
+    assert_eq!(skeleton.props.len(), 3);
+
+    assert_relative_eq!(skeleton.props[0].scale.x, 3.5);
+    assert_relative_eq!(skeleton.props[0].scale.y, 3.5);
+    assert_relative_eq!(skeleton.props[0].scale.z, 3.5);
+
+    assert_relative_eq!(skeleton.props[1].scale.x, 1.0);
+    assert_relative_eq!(skeleton.props[1].scale.y, 1.0);
+    assert_relative_eq!(skeleton.props[1].scale.z, 1.0);
+
+    assert_relative_eq!(skeleton.props[2].scale.x, 1.0);
+}
+
+#[test]
 fn test_uv_scale_default() {
     let (interpreter, interner) = setup();
 

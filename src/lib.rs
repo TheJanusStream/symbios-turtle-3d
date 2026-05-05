@@ -35,6 +35,6 @@ pub mod interpreter;
 pub mod skeleton;
 pub mod turtle;
 
-pub use interpreter::{TurtleConfig, TurtleInterpreter};
-pub use skeleton::{Skeleton, SkeletonPoint, SkeletonProp};
+pub use interpreter::{STANDARD_TURTLE_SYMBOLS, TurtleConfig, TurtleInterpreter};
+pub use skeleton::{Skeleton, SkeletonPoint, SkeletonProp, TurtleWarning};
 pub use turtle::{TurtleOp, TurtleState};
