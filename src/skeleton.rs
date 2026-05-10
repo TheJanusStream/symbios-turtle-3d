@@ -84,6 +84,7 @@ pub struct Skeleton {
 }
 
 impl Skeleton {
+    /// Creates an empty skeleton with no strands, props, or warnings.
     pub fn new() -> Self {
         Self::default()
     }
@@ -114,10 +115,14 @@ impl Skeleton {
         self.strand_parents.push(parent_strand_idx);
     }
 
+    /// Records a discrete prop (leaf, flower, etc.) at its turtle-frozen
+    /// position, rotation, scale, and material state.
     pub fn add_prop(&mut self, prop: SkeletonProp) {
         self.props.push(prop);
     }
 
+    /// Resets the skeleton to its empty state, dropping all strands, parent
+    /// links, props, and warnings while preserving allocated capacity.
     pub fn clear(&mut self) {
         self.strands.clear();
         self.strand_parents.clear();

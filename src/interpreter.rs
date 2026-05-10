@@ -13,8 +13,8 @@ const OP_MAP_DENSE_CAPACITY: usize = 1024;
 
 /// Tiered symbol-id → [`TurtleOp`] lookup.
 ///
-/// Hot path: a `Vec` indexed directly by symbol id, capped at
-/// [`OP_MAP_DENSE_CAPACITY`] so a stray high id can't force the table to
+/// Hot path: a `Vec` indexed directly by symbol id, capped at the
+/// dense-tier capacity (1024) so a stray high id can't force the table to
 /// grow into hundreds of KB of `TurtleOp::Ignore` padding. Symbol ids at or
 /// above the cap fall through to a `HashMap` — slower but bounded by the
 /// number of *registered* high ids, not their numeric magnitude.
@@ -100,9 +100,9 @@ impl Default for TurtleConfig {
 /// Interprets L-System output as 3D turtle graphics, producing a [`Skeleton`].
 ///
 /// Maps symbol IDs to [`TurtleOp`]s using a tiered lookup: a dense `Vec`
-/// for ids below [`OP_MAP_DENSE_CAPACITY`] (the common case, O(1) indexing)
-/// with a `HashMap` fallback for sparse high ids. Memory stays bounded even
-/// when consumers register single symbols at id 10_000+.
+/// for ids below the dense-tier capacity (1024) — the common case, O(1)
+/// indexing — with a `HashMap` fallback for sparse high ids. Memory stays
+/// bounded even when consumers register single symbols at id 10_000+.
 pub struct TurtleInterpreter {
     op_map: OpMap,
     config: TurtleConfig,
@@ -120,9 +120,9 @@ impl TurtleInterpreter {
     /// Builder method to seed the dense tier of the operation map from a Vec.
     ///
     /// `map[i]` becomes the operation for symbol id `i`. The Vec is truncated
-    /// at [`OP_MAP_DENSE_CAPACITY`]; entries beyond that bound are dropped —
-    /// register them via [`Self::set_op`] instead so they land in the sparse
-    /// tier.
+    /// at the dense-tier capacity (1024); entries beyond that bound are
+    /// dropped — register them via [`Self::set_op`] instead so they land in
+    /// the sparse tier.
     pub fn with_map(mut self, map: Vec<TurtleOp>) -> Self {
         let len = map.len().min(OP_MAP_DENSE_CAPACITY);
         self.op_map.dense = map.into_iter().take(len).collect();
@@ -160,9 +160,9 @@ impl TurtleInterpreter {
 
     /// Maps a symbol ID to a turtle operation.
     ///
-    /// Symbol ids below [`OP_MAP_DENSE_CAPACITY`] are stored in the dense
-    /// `Vec` tier (with intermediate slots filled by `TurtleOp::Ignore`); ids
-    /// at or above the cap go to the sparse `HashMap` tier so they don't
+    /// Symbol ids below the dense-tier capacity (1024) are stored in the
+    /// dense `Vec` tier (with intermediate slots filled by `TurtleOp::Ignore`);
+    /// ids at or above the cap go to the sparse `HashMap` tier so they don't
     /// force the `Vec` to grow proportionally to the id's magnitude.
     pub fn set_op(&mut self, sym_id: u16, op: TurtleOp) {
         self.op_map.set(sym_id, op);

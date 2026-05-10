@@ -12,23 +12,31 @@
 //! - Palette-based material system with per-segment color, material ID, and UV scale
 //! - Tropism support for natural plant-like growth
 //! - Prop spawning for discrete objects (leaves, flowers)
+//! - Branch-hierarchy tracking via [`Skeleton::strand_parents`]
+//! - Bounded `[` recursion via [`TurtleConfig::max_stack_depth`]; overflow is
+//!   reported on [`Skeleton::warnings`] as [`TurtleWarning::StackOverflow`]
+//!   without corrupting downstream geometry
 //!
 //! ## Example
 //!
-//! ```ignore
+//! ```
 //! use symbios::{SymbiosState, SymbolTable};
 //! use symbios_turtle_3d::{TurtleConfig, TurtleInterpreter};
 //!
+//! // Builder-style setup: interns the canonical turtle alphabet and
+//! // registers each symbol's default operation in one call.
 //! let mut interner = SymbolTable::new();
-//! let mut interpreter = TurtleInterpreter::new(TurtleConfig::default());
+//! let interpreter = TurtleInterpreter::new(TurtleConfig::default())
+//!     .with_standard_symbols(&mut interner);
 //!
-//! // Intern symbols and populate standard mappings
-//! interner.intern("F").unwrap();
-//! interpreter.populate_standard_symbols(&interner);
+//! // Build an L-System state (normally produced by symbios expansion).
+//! let mut state = SymbiosState::new();
+//! let f_id = interner.resolve_id("F").unwrap();
+//! state.push(f_id, 0.0, &[10.0]).unwrap(); // F(10)
 //!
-//! // Build skeleton from L-System state
-//! let state = SymbiosState::new();
 //! let skeleton = interpreter.build_skeleton(&state);
+//! assert_eq!(skeleton.strands.len(), 1);
+//! assert!(skeleton.warnings.is_empty());
 //! ```
 
 pub mod interpreter;

@@ -40,17 +40,26 @@ impl Default for TurtleState {
 }
 
 impl TurtleState {
-    /// Returns the turtle's local up direction (Y-axis) in world space.
+    /// Returns the turtle's heading — its local **+Y** axis in world space.
+    ///
+    /// `F` and `f` advance the turtle along this vector, so `up()` is also the
+    /// direction of motion. Naming follows the convention of a turtle that
+    /// stands on its base and moves head-first.
     pub fn up(&self) -> Vec3 {
         self.rotation * Vec3::Y
     }
 
-    /// Returns the turtle's local forward direction (Z-axis) in world space.
+    /// Returns the turtle's local **+Z** axis in world space.
+    ///
+    /// This axis is perpendicular to the heading ([`Self::up`]) and is the
+    /// rotation axis for yaw (`+` / `-`). It is *not* the direction the turtle
+    /// moves — motion happens along [`Self::up`].
     pub fn forward(&self) -> Vec3 {
         self.rotation * Vec3::Z
     }
 
-    /// Returns the turtle's local right direction (X-axis) in world space.
+    /// Returns the turtle's local **+X** axis in world space — the rotation
+    /// axis for pitch (`&` / `^`).
     pub fn right(&self) -> Vec3 {
         self.rotation * Vec3::X
     }
